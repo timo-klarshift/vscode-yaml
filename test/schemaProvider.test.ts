@@ -4,12 +4,12 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from 'vscode';
-import { getDocUri, activate, testCompletion, testHover, testDiagnostics, sleep } from './helper';
-import { Uri } from 'vscode';
+import { getDocUri, activate, activateExtension, testCompletion, testHover, testDiagnostics, sleep } from './helper';
 
 describe('Tests for schema provider feature', () => {
 	const docUri = getDocUri('completion/completion.yaml');
 	const hoverUri = getDocUri('hover/basic.yaml');
+	const nullUri = getDocUri('hover/null.yaml');
 
     it('completion, hover, and validation work with registered contributor schema', async () => {
 		const client = await activate(docUri);
@@ -39,9 +39,9 @@ describe('Tests for schema provider feature', () => {
 				severity: 0
 			}
 		]);
-		
+
 	});
-	
+
 	it('Validation occurs automatically with registered contributor schema', async () => {
 		const client = await activate(hoverUri);
 		client.registerContributor(SCHEMA, onRequestSchema1URI, onRequestSchema1Content);
@@ -54,6 +54,21 @@ describe('Tests for schema provider feature', () => {
 				severity: 0
 			}
 		]);
+	});
+
+	it('Validation of Null-Values', async () => {
+		// get extension and register constributor
+		const client = await activateExtension();
+		client.registerContributor(SCHEMA4, onRequestSchemaNullURI, onRequestSchemaNullContent);
+
+		// activate the document
+		await activate(nullUri)
+
+		await sleep(2000); // Wait for the diagnostics to compute on this file
+
+		// no diagnostics should be available
+		// as the provided schema is valid
+		await testDiagnostics(nullUri, []);
 	});
 
 	it('Multiple contributors can match one file', async () => {
@@ -81,6 +96,7 @@ describe('Tests for schema provider feature', () => {
 const SCHEMA = "myschema";
 const SCHEMA2 = "myschema2";
 const SCHEMA3 = "myschema3";
+const SCHEMA4 = "custom_null";
 
 const schemaJSON = JSON.stringify({
 	type: "object",
@@ -100,6 +116,31 @@ function onRequestSchema1URI(resource: string): string | undefined {
 		return `${SCHEMA}://schema/porter`;
 	}
 	return undefined;
+}
+
+function onRequestSchemaNullURI(resource: string): string | undefined {
+	if (resource.endsWith('null.yaml')) {
+		return `${SCHEMA4}://schema/porter`;
+	}
+	return undefined;
+}
+
+function onRequestSchemaNullContent(schemaUri: string): string | undefined {
+	return JSON.stringify({
+		type: 'object',
+		required: ['name', 'values'],
+		properties: {
+			name: {
+				type: 'string',
+			},
+			values: {
+				type: 'array',
+				items: {
+					type: 'null'
+				}
+			}
+		}
+	})
 }
 
 function onRequestSchema1Content(schemaUri: string): string | undefined {

@@ -16,7 +16,7 @@ export let platformEol: string;
 /**
  * Activates the redhat.vscode-yaml extension
  */
-export async function activate(docUri: vscode.Uri) {
+export async function activate(docUri: vscode.Uri) : Promise<any | undefined> {
     const ext = vscode.extensions.getExtension('redhat.vscode-yaml')!;
 	const activation = await ext.activate();
 	try {
@@ -28,6 +28,15 @@ export async function activate(docUri: vscode.Uri) {
 	} catch (e) {
 		console.error(e);
 	}
+}
+
+/**
+ * Only activate the Extension
+ * and return an instance of it
+ */
+export async function activateExtension() : Promise<any | undefined> {
+    const ext = vscode.extensions.getExtension('redhat.vscode-yaml')!;
+	return ext.activate();
 }
 
 export async function sleep(ms: number) {
@@ -117,11 +126,11 @@ export async function testHover(
 	});
 }
 
-export async function testDiagnostics(docUri: vscode.Uri, expectedDiagnostics: vscode.Diagnostic[]) {  
+export async function testDiagnostics(docUri: vscode.Uri, expectedDiagnostics: vscode.Diagnostic[]) {
 	const actualDiagnostics = vscode.languages.getDiagnostics(docUri);
-  
+
 	assert.equal(actualDiagnostics.length, expectedDiagnostics.length);
-  
+
 	expectedDiagnostics.forEach((expectedDiagnostic, i) => {
 	  const actualDiagnostic = actualDiagnostics[i]
 	  assert.equal(actualDiagnostic.message, expectedDiagnostic.message)
